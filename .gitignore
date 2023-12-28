@@ -1,0 +1,7 @@
+/quickjs/build
+/quickjs/libquickjs.a
+/quickjs/qjsc.exe
+/build
+/.clangd
+/.clang-format
+/.cache
