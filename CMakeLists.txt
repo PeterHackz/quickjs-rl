@@ -24,9 +24,10 @@ set_target_properties(app PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/../
 )
 
-target_link_libraries(app raylib quickjs opengl32 gdi32 winmm m)
+target_link_libraries(app raylib quickjs pthread opengl32 gdi32 winmm m)
 
 if(WIN32)
     set_target_properties(app PROPERTIES LINK_FLAGS "-static")
+    target_compile_definitions(app PRIVATE CONFIG_BIGNUM)
   #  target_link_options(app PRIVATE -mwindows)
 endif()

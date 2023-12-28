@@ -1,23 +1,44 @@
-#include <quickjs.h>
-#include <raylib.h>
+#include "quickjs-rl.h"
+#include "quickjs.h"
+#include <string.h>
 
-int main(void)
+int main(int argc, char **argv)
 {
-    const char *title = "Quick-rl Window Hello World";
-    const char *text = "Hello World";
 
-    InitWindow(800, 450, title);
-    SetTargetFPS(60);
-
-    while (!WindowShouldClose())
+    if (argc < 2)
     {
-        BeginDrawing();
-        ClearBackground(RAYWHITE);
-        DrawText(text, 400 - MeasureText(text, 20) / 2, 225, 20, LIGHTGRAY);
-        EndDrawing();
+        printf("Usage: %s <script.js>\n", argv[0]);
+        return 1;
     }
 
-    CloseWindow();
+    const char *code;
+
+    if ((code = io_readfile(argv[1])) == NULL)
+    {
+        printf("Error: cannot read file %s\n", argv[1]);
+        return 1;
+    }
+
+    JSRuntime *rt = JS_NewRuntime();
+    JSContext *ctx = JS_NewContext(rt);
+
+    JS_AddRLBindings(ctx);
+
+    JSValue v = JS_Eval(ctx, code, strlen(code), argv[1], 0);
+
+    if (JS_IsException(v))
+    {
+        JSValue e = JS_GetException(ctx);
+        JSValue s = JS_ToString(ctx, e);
+        const char *str = JS_ToCString(ctx, s);
+        printf("Exception: %s\n", str);
+        JS_FreeCString(ctx, str);
+        JS_FreeValue(ctx, s);
+        JS_FreeValue(ctx, e);
+    }
+
+    JS_FreeContext(ctx);
+    JS_FreeRuntime(rt);
 
     return 0;
 }

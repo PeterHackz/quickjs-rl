@@ -3,3 +3,5 @@
 /.clangd
 /.clang-format
 /.cache
+/app.exe
+/script.js
