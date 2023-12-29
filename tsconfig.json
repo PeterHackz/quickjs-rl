@@ -1,0 +1,20 @@
+{
+    "compilerOptions": {
+        "module": "commonjs",
+        "target": "ES2021",
+        "lib": [
+            "ES2021"
+        ],
+        "allowJs": true,
+        "checkJs": true,
+        "outDir": "./dist"
+    },
+    "typeAcquisition": {
+        "include": [
+            "types"
+        ]
+    },
+    "exclude": [
+        "quickjs"
+    ]
+}

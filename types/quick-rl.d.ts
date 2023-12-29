@@ -3,7 +3,7 @@ declare namespace rl {
      * outputs a message to the console
      * @param args - list of javascript objects to output
      */
-    function log(args: string[]): void;
+    function log(...args: string[]): void;
 
     /**
      * Initialize window and OpenGL context
@@ -76,7 +76,7 @@ declare namespace rl {
     /**
         Color, 4 components, R8G8B8A8 (32bit)
     */
-    declare class Color {
+    class Color {
         r: number;
         g: number;
         b: number;
