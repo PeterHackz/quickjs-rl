@@ -182,16 +182,13 @@ JS_RL_CLASS_DECLARE_INIT(Color)
 
 JS_RL_PREPARE(Color)
 {
-    JSValue global_obj, obj, rl_obj, color_class;
+    JSValue global_obj, obj, rl_obj;
 
     global_obj = JS_GetGlobalObject(ctx);
     assert(!JS_IsException(global_obj));
 
     rl_obj = JS_GetPropertyStr(ctx, global_obj, "rl");
     assert(!JS_IsException(rl_obj));
-
-    color_class = JS_GetPropertyStr(ctx, rl_obj, "Color");
-    assert(!JS_IsException(color_class));
 
 #define DEFINE_COLOR(name)                                                     \
     Color *c_##name;                                                           \
@@ -206,7 +203,7 @@ JS_RL_PREPARE(Color)
         /* not handled yet */                                                  \
         ;                                                                      \
     JS_SetOpaque(obj, c_##name);                                               \
-    JS_SetPropertyStr(ctx, color_class, #name, obj);
+    JS_SetPropertyStr(ctx, rl_obj, #name, obj);
 
     DEFINE_COLOR(LIGHTGRAY);
     DEFINE_COLOR(GRAY);
@@ -235,7 +232,6 @@ JS_RL_PREPARE(Color)
     DEFINE_COLOR(MAGENTA);
     DEFINE_COLOR(RAYWHITE);
 
-    JS_FreeValue(ctx, color_class);
     JS_FreeValue(ctx, rl_obj);
     JS_FreeValue(ctx, global_obj);
 

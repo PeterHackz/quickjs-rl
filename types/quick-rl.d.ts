@@ -86,32 +86,32 @@ declare namespace rl {
          * Color, 4 components, R8G8B8A8 (32bit)
          */
         constructor(r?: number, g?: number, b?: number, a?: number);
-
-        static LIGHTGRAY: Color;
-        static GRAY: Color;
-        static DARKGRAY: Color;
-        static YELLOW: Color;
-        static GOLD: Color;
-        static ORANGE: Color;
-        static PINK: Color;
-        static RED: Color;
-        static MAROON: Color;
-        static GREEN: Color;
-        static LIME: Color;
-        static DARKGREEN: Color;
-        static SKYBLUE: Color;
-        static BLUE: Color;
-        static DARKBLUE: Color;
-        static PURPLE: Color;
-        static VIOLET: Color;
-        static DARKPURPLE: Color;
-        static BEIGE: Color;
-        static BROWN: Color;
-        static DARKBROWN: Color;
-        static WHITE: Color;
-        static BLACK: Color;
-        static BLANK: Color;
-        static MAGENTA: Color;
-        static RAYWHITE: Color;
     }
+
+    const LIGHTGRAY: Color;
+    const GRAY: Color;
+    const DARKGRAY: Color;
+    const YELLOW: Color;
+    const GOLD: Color;
+    const ORANGE: Color;
+    const PINK: Color;
+    const RED: Color;
+    const MAROON: Color;
+    const GREEN: Color;
+    const LIME: Color;
+    const DARKGREEN: Color;
+    const SKYBLUE: Color;
+    const BLUE: Color;
+    const DARKBLUE: Color;
+    const PURPLE: Color;
+    const VIOLET: Color;
+    const DARKPURPLE: Color;
+    const BEIGE: Color;
+    const BROWN: Color;
+    const DARKBROWN: Color;
+    const WHITE: Color;
+    const BLACK: Color;
+    const BLANK: Color;
+    const MAGENTA: Color;
+    const RAYWHITE: Color;
 }
