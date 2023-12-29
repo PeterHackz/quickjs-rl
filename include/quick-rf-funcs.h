@@ -1,4 +1,5 @@
 #ifdef JS_RL_FUNCS
+// Window-related functions
 JS_RL_FUNC(InitWindow)
 JS_RL_FUNC(CloseWindow)
 JS_RL_FUNC(WindowShouldClose)
