@@ -3,7 +3,7 @@ declare namespace rl {
      * outputs a message to the console
      * @param args - list of javascript objects to output
      */
-    function log(...args: string[]): void;
+    function log(...args: any[]): void;
 
     /**
      * Initialize window and OpenGL context

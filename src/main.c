@@ -1,3 +1,4 @@
+#include "quickjs-libc.h"
 #include "quickjs-rl.h"
 #include "quickjs.h"
 #include <string.h>
@@ -21,20 +22,22 @@ int main(int argc, char **argv)
 
     JSRuntime *rt = JS_NewRuntime();
     JSContext *ctx = JS_NewContext(rt);
+    JS_SetModuleLoaderFunc(rt, NULL, js_module_loader, NULL);
 
     JS_AddRLBindings(ctx);
 
-    JSValue v = JS_Eval(ctx, code, strlen(code), argv[1], 0);
+    JSValue v = JS_Eval(ctx, code, strlen(code), argv[1], JS_EVAL_TYPE_MODULE);
 
     if (JS_IsException(v))
     {
-        JSValue e = JS_GetException(ctx);
-        JSValue s = JS_ToString(ctx, e);
-        const char *str = JS_ToCString(ctx, s);
-        printf("Exception: %s\n", str);
-        JS_FreeCString(ctx, str);
-        JS_FreeValue(ctx, s);
-        JS_FreeValue(ctx, e);
+        JSValue exc = JS_GetException(ctx);
+        printf("[-] Exception: %s\n", JS_ToCString(ctx, exc));
+        JSValue stackval = JS_GetPropertyStr(ctx, exc, "stack");
+        const char *stackstr = JS_ToCString(ctx, stackval);
+        JS_FreeValue(ctx, stackval);
+        JS_FreeValue(ctx, exc);
+        JS_FreeCString(ctx, stackstr);
+        printf("[-] stack: %s\n", stackstr);
     }
 
     JS_FreeValue(ctx, v);
