@@ -56,6 +56,10 @@ char *io_readfile(const char *filename);
 
 #define JS_RL_CLASS_INIT _JS_RL_CLASS_INIT
 
+#define _JS_RL_PREPARE(claz) void js_rl_##claz##_prepare(JSContext *ctx)
+
+#define JS_RL_PREPARE _JS_RL_PREPARE
+
 #define JS_RL_CLASS_DECLARE_INIT2(name, code)                                  \
     JSClassID js_rl_##name##_class_id;                                         \
     JSValue js_rl_##name##_proto;                                              \

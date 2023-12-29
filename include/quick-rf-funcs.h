@@ -25,5 +25,7 @@ JS_RL_SETTER_MAGIC(Color, color);
 #endif
 
 #ifdef JS_RL_CLASSES_INITS
-JS_RL_CLASS_INIT(Color);
+JS_RL_CLASS_INIT(Color); // used by JS_AddRLBindings to register Color class
+JS_RL_PREPARE(
+    Color); // used to register Color static properties (ex: Color.RAYWHITE)
 #endif

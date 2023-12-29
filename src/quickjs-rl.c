@@ -1,5 +1,6 @@
 #include "quickjs-rl.h"
 #include "cutils.h"
+#include <assert.h>
 #include <quickjs.h>
 #include <raylib.h>
 
@@ -50,13 +51,19 @@ void JS_AddRLBindings(JSContext *ctx)
 #ifdef JS_RL_CLASS_INIT
 #undef JS_RL_CLASS_INIT
 #endif
+#ifdef JS_RL_PREPARE
+#undef JS_RL_PREPARE
+#endif
 
 #define JS_RL_CLASS_INIT(name) js_rl_##name##_init(ctx);
+#define JS_RL_PREPARE(name) js_rl_##name##_prepare(ctx);
 
 #include "quick-rf-funcs.h"
 
 #undef JS_RL_CLASS_INIT
+#undef JS_RL_PREPARE
 #define JS_RL_CLASS_INIT _JS_RL_CLASS_INIT
+#define JS_RL_PREPARE _JS_RL_PREPARE
 }
 
 JS_RL_FUNC(log)
@@ -171,7 +178,22 @@ JS_RL_CLASS_PROTO_FUNCS(Color){
 #undef COLOR_PROTO
 };
 
-#define ADD_COLOR_OBJECT(name)                                                 \
+JS_RL_CLASS_DECLARE_INIT(Color)
+
+JS_RL_PREPARE(Color)
+{
+    JSValue global_obj, obj, rl_obj, color_class;
+
+    global_obj = JS_GetGlobalObject(ctx);
+    assert(!JS_IsException(global_obj));
+
+    rl_obj = JS_GetPropertyStr(ctx, global_obj, "rl");
+    assert(!JS_IsException(rl_obj));
+
+    color_class = JS_GetPropertyStr(ctx, rl_obj, "Color");
+    assert(!JS_IsException(color_class));
+
+#define DEFINE_COLOR(name)                                                     \
     Color *c_##name;                                                           \
     c_##name = js_mallocz(ctx, sizeof(*c_##name));                             \
     c_##name->r = name.r;                                                      \
@@ -184,41 +206,41 @@ JS_RL_CLASS_PROTO_FUNCS(Color){
         /* not handled yet */                                                  \
         ;                                                                      \
     JS_SetOpaque(obj, c_##name);                                               \
-    JS_SetPropertyStr(ctx, Color_class, #name, obj);
+    JS_SetPropertyStr(ctx, color_class, #name, obj);
 
-JS_RL_CLASS_DECLARE_INIT2(Color, {
-    JSValue obj;
-    // This should NOT fail
-    // if it does, it is not handled yet! so please report it
-    ADD_COLOR_OBJECT(LIGHTGRAY);
-    ADD_COLOR_OBJECT(GRAY);
-    ADD_COLOR_OBJECT(DARKGRAY);
-    ADD_COLOR_OBJECT(YELLOW);
-    ADD_COLOR_OBJECT(GOLD);
-    ADD_COLOR_OBJECT(ORANGE);
-    ADD_COLOR_OBJECT(PINK);
-    ADD_COLOR_OBJECT(RED);
-    ADD_COLOR_OBJECT(MAROON);
-    ADD_COLOR_OBJECT(GREEN);
-    ADD_COLOR_OBJECT(LIME);
-    ADD_COLOR_OBJECT(DARKGREEN);
-    ADD_COLOR_OBJECT(SKYBLUE);
-    ADD_COLOR_OBJECT(BLUE);
-    ADD_COLOR_OBJECT(DARKBLUE);
-    ADD_COLOR_OBJECT(PURPLE);
-    ADD_COLOR_OBJECT(VIOLET);
-    ADD_COLOR_OBJECT(DARKPURPLE);
-    ADD_COLOR_OBJECT(BEIGE);
-    ADD_COLOR_OBJECT(BROWN);
-    ADD_COLOR_OBJECT(DARKBROWN);
-    ADD_COLOR_OBJECT(WHITE);
-    ADD_COLOR_OBJECT(BLACK);
-    ADD_COLOR_OBJECT(BLANK);
-    ADD_COLOR_OBJECT(MAGENTA);
-    ADD_COLOR_OBJECT(RAYWHITE);
-})
+    DEFINE_COLOR(LIGHTGRAY);
+    DEFINE_COLOR(GRAY);
+    DEFINE_COLOR(DARKGRAY);
+    DEFINE_COLOR(YELLOW);
+    DEFINE_COLOR(GOLD);
+    DEFINE_COLOR(ORANGE);
+    DEFINE_COLOR(PINK);
+    DEFINE_COLOR(RED);
+    DEFINE_COLOR(MAROON);
+    DEFINE_COLOR(GREEN);
+    DEFINE_COLOR(LIME);
+    DEFINE_COLOR(DARKGREEN);
+    DEFINE_COLOR(SKYBLUE);
+    DEFINE_COLOR(BLUE);
+    DEFINE_COLOR(DARKBLUE);
+    DEFINE_COLOR(PURPLE);
+    DEFINE_COLOR(VIOLET);
+    DEFINE_COLOR(DARKPURPLE);
+    DEFINE_COLOR(BEIGE);
+    DEFINE_COLOR(BROWN);
+    DEFINE_COLOR(DARKBROWN);
+    DEFINE_COLOR(WHITE);
+    DEFINE_COLOR(BLACK);
+    DEFINE_COLOR(BLANK);
+    DEFINE_COLOR(MAGENTA);
+    DEFINE_COLOR(RAYWHITE);
 
-#undef ADD_COLOR_OBJECT
+    JS_FreeValue(ctx, color_class);
+    JS_FreeValue(ctx, rl_obj);
+    JS_FreeValue(ctx, global_obj);
+
+#undef DEFINE_COLOR
+}
 
 JS_RL_CLASS_DEF(Color);
 
