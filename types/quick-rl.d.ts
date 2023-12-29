@@ -85,11 +85,7 @@ declare namespace rl {
         /**
          * Color, 4 components, R8G8B8A8 (32bit)
          */
-        constructor();
-        constructor(r: number);
-        constructor(r: number, g: number);
-        constructor(r: number, g: number, b: number);
-        constructor(r: number, g: number, b: number, a: number);
+        constructor(r?: number, g?: number, b?: number, a?: number);
 
         static LIGHTGRAY: Color;
         static GRAY: Color;
