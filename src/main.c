@@ -37,8 +37,12 @@ int main(int argc, char **argv)
         JS_FreeValue(ctx, e);
     }
 
+    JS_FreeValue(ctx, v);
+
     JS_FreeContext(ctx);
     JS_FreeRuntime(rt);
+
+    printf("done\n");
 
     return 0;
 }
