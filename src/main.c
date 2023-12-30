@@ -14,38 +14,72 @@ int main(int argc, char **argv)
 
     const char *code;
 
-    if ((code = io_readfile(argv[1])) == NULL)
+    JSRuntime *rt = JS_NewRuntime();
+    JSContext *ctx = JS_NewContext(rt);
+
+    if ((code = io_readfile(ctx, argv[1])) == NULL)
     {
         printf("Error: cannot read file %s\n", argv[1]);
+        JS_FreeContext(ctx);
+        JS_FreeRuntime(rt);
         return 1;
     }
 
-    JSRuntime *rt = JS_NewRuntime();
-    JSContext *ctx = JS_NewContext(rt);
     JS_SetModuleLoaderFunc(rt, NULL, js_module_loader, NULL);
 
     JS_AddRLBindings(ctx);
 
     JSValue v = JS_Eval(ctx, code, strlen(code), argv[1], JS_EVAL_TYPE_MODULE);
 
+    JSValue exc;
+
     if (JS_IsException(v))
-    {
-        JSValue exc = JS_GetException(ctx);
-        printf("[-] Exception: %s\n", JS_ToCString(ctx, exc));
-        JSValue stackval = JS_GetPropertyStr(ctx, exc, "stack");
-        const char *stackstr = JS_ToCString(ctx, stackval);
-        JS_FreeValue(ctx, stackval);
-        JS_FreeValue(ctx, exc);
-        JS_FreeCString(ctx, stackstr);
-        printf("[-] stack: %s\n", stackstr);
-    }
+        goto exception;
+
+    JSValue result = JS_PromiseResult(ctx, v);
+    int promise_state = JS_PromiseState(ctx, v);
+
+    js_std_loop(ctx);
 
     JS_FreeValue(ctx, v);
 
+    if (JS_IsException(result))
+        goto exception;
+
+    if (promise_state == JS_PROMISE_REJECTED)
+    {
+        JS_Throw(ctx, result);
+        goto exception;
+    }
+
+    goto end;
+
+exception:
+    exc = JS_GetException(ctx);
+
+    const char *excStr = JS_ToCString(ctx, exc);
+
+    printf("[-] Exception: %s\n", excStr);
+
+    JSValue stackval = JS_GetPropertyStr(ctx, exc, "stack");
+
+    if (!JS_IsUndefined(stackval))
+    {
+        const char *stackstr = JS_ToCString(ctx, stackval);
+        printf("[-] stack: %s", stackstr);
+        JS_FreeCString(ctx, stackstr);
+        JS_FreeValue(ctx, stackval);
+    }
+
+    JS_FreeCString(ctx, excStr);
+    JS_FreeValue(ctx, exc);
+
+end:
+
+    js_free(ctx, (void *)code);
+
     JS_FreeContext(ctx);
     JS_FreeRuntime(rt);
-
-    printf("done\n");
 
     return 0;
 }

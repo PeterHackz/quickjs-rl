@@ -88,30 +88,46 @@ declare namespace rl {
         constructor(r?: number, g?: number, b?: number, a?: number);
     }
 
-    const LIGHTGRAY: Color;
-    const GRAY: Color;
-    const DARKGRAY: Color;
-    const YELLOW: Color;
-    const GOLD: Color;
-    const ORANGE: Color;
-    const PINK: Color;
-    const RED: Color;
-    const MAROON: Color;
-    const GREEN: Color;
-    const LIME: Color;
-    const DARKGREEN: Color;
-    const SKYBLUE: Color;
-    const BLUE: Color;
-    const DARKBLUE: Color;
-    const PURPLE: Color;
-    const VIOLET: Color;
-    const DARKPURPLE: Color;
-    const BEIGE: Color;
-    const BROWN: Color;
-    const DARKBROWN: Color;
-    const WHITE: Color;
-    const BLACK: Color;
-    const BLANK: Color;
-    const MAGENTA: Color;
-    const RAYWHITE: Color;
+    /**
+     * Image struct
+     */
+    class Image {
+        private data: ArrayBuffer | Uint8Array;
+        width: number;
+        height: number;
+        mipmaps: number;
+        format: number;
+
+        /**
+         * rl.Image is not supposed to be initialized directly, use rl.LoadImage() or related function instead
+         */
+        private constructor();
+    }
+
+    const LIGHTGRAY: Color,
+        GRAY: Color,
+        DARKGRAY: Color,
+        YELLOW: Color,
+        GOLD: Color,
+        ORANGE: Color,
+        PINK: Color,
+        RED: Color,
+        MAROON: Color,
+        GREEN: Color,
+        LIME: Color,
+        DARKGREEN: Color,
+        SKYBLUE: Color,
+        BLUE: Color,
+        DARKBLUE: Color,
+        PURPLE: Color,
+        VIOLET: Color,
+        DARKPURPLE: Color,
+        BEIGE: Color,
+        BROWN: Color,
+        DARKBROWN: Color,
+        WHITE: Color,
+        BLACK: Color,
+        BLANK: Color,
+        MAGENTA: Color,
+        RAYWHITE: Color;
 }

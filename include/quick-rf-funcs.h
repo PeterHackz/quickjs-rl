@@ -23,10 +23,17 @@ JS_RL_CLASS_CTOR(Color);
 JS_RL_CLASS_FINALIZER(Color);
 JS_RL_GETTER_MAGIC(Color, color);
 JS_RL_SETTER_MAGIC(Color, color);
+
+JS_RL_CLASS_CTOR(Image);
+JS_RL_CLASS_FINALIZER(Image);
+JS_RL_GETTER_MAGIC(Image, img_props);
+JS_RL_SETTER_MAGIC(Image, img_props);
 #endif
 
 #ifdef JS_RL_CLASSES_INITS
 JS_RL_CLASS_INIT(Color); // used by JS_AddRLBindings to register Color class
 JS_RL_PREPARE(
     Color); // used to register Color static properties (ex: Color.RAYWHITE)
+
+JS_RL_CLASS_INIT(Image);
 #endif

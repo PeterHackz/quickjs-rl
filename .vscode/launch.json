@@ -9,7 +9,9 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/app.exe",
-            "args": [],
+            "args": [
+                "C:\\Users\\peter\\OneDrive\\Desktop\\quick-rl\\script.js"
+            ],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",
             "environment": [],

@@ -1,8 +1,10 @@
 #include "quickjs-rl.h"
 #include "cutils.h"
 #include <assert.h>
+#include <corecrt.h>
 #include <quickjs.h>
 #include <raylib.h>
+#include <stdint.h>
 
 const JSCFunctionListEntry js_rl_funcs[] = {
 
@@ -167,7 +169,7 @@ JS_RL_FUNC(EndDrawing)
     return JS_UNDEFINED;
 }
 
-JS_RL_CLASS_PROTO_FUNCS(Color){
+JS_RL_CLASS_PROTO_FUNCS(Color) = {
 #define COLOR_PROTO(name, magic)                                               \
     JS_CGETSET_MAGIC_DEF(#name, js_rl_Color_get_color, js_rl_Color_set_color,  \
                          magic)
@@ -258,6 +260,11 @@ JS_RL_CLASS_CTOR(Color)
     if (argc > 0)                                                              \
     {                                                                          \
         argc--;                                                                \
+        if (!JS_IsNumber(argv[argc]))                                          \
+        {                                                                      \
+            JS_ThrowTypeError(ctx, "expected a number");                       \
+            goto fail;                                                         \
+        }                                                                      \
         if (JS_ToInt32(ctx, &colorVal, argv[argc]) < 0)                        \
             goto fail;                                                         \
         if (colorVal < 0 || colorVal > 255)                                    \
@@ -279,9 +286,6 @@ JS_RL_CLASS_CTOR(Color)
 
 #undef SET_COLOR
 
-    // proto = JS_GetPropertyStr(ctx, new_target, "prototype");
-    // if (JS_IsException(proto))
-    //    goto fail;
     obj = JS_NewObjectProtoClass(ctx, js_rl_Color_proto, js_rl_Color_class_id);
     if (JS_IsException(obj))
         goto fail;
@@ -327,6 +331,9 @@ JS_RL_SETTER_MAGIC(Color, color)
     if (!color)
         return JS_EXCEPTION;
 
+    if (!JS_IsNumber(val))
+        return JS_ThrowTypeError(ctx, "expected a number");
+
     int colorVal;
     if (JS_ToInt32(ctx, &colorVal, val))
         return JS_EXCEPTION;
@@ -350,7 +357,129 @@ JS_RL_SETTER_MAGIC(Color, color)
     return JS_UNDEFINED;
 }
 
-char *io_readfile(const char *filename)
+#define IMAGE_PROTO_DATA_MAGIC 0
+#define IMAGE_PROTO_WIDTH_MAGIC 1
+#define IMAGE_PROTO_HEIGHT_MAGIC 2
+#define IMAGE_PROTO_MIPMAPS_MAGIC 3
+#define IMAGE_PROTO_FORMAT_MAGIC 4
+
+JS_RL_CLASS_PROTO_FUNCS(Image) = {
+#define IMG_PROTO(name, magic)                                                 \
+    JS_CGETSET_MAGIC_DEF(#name, js_rl_Image_get_img_props,                     \
+                         js_rl_Image_set_img_props, magic)
+    IMG_PROTO(data, IMAGE_PROTO_DATA_MAGIC),
+    IMG_PROTO(width, IMAGE_PROTO_WIDTH_MAGIC),
+    IMG_PROTO(height, IMAGE_PROTO_HEIGHT_MAGIC),
+    IMG_PROTO(mipmaps, IMAGE_PROTO_MIPMAPS_MAGIC),
+    IMG_PROTO(format, IMAGE_PROTO_FORMAT_MAGIC),
+#undef IMG_PROTO
+};
+
+JS_RL_CLASS_DECLARE_INIT(Image)
+
+JS_RL_CLASS_DEF(Image);
+
+JSValue get_array_buffer_contents(JSContext *ctx, JSValue val, uint8_t **buf,
+                                  size_t *buf_len)
+{
+    JSValue exception;
+    bool is_empty, is_array_buffer;
+
+    if (JS_IsUndefined(val))
+    {
+        return JS_ThrowTypeError(ctx,
+                                 "expected an array buffer, got undefined");
+    }
+    else if (JS_IsNull(val))
+    {
+        return JS_ThrowTypeError(ctx, "expected an array buffer, got null");
+    }
+
+    *buf = JS_GetArrayBuffer(ctx, buf_len, val);
+
+    is_empty = *buf == NULL && JS_IsNull(exception);
+    JS_FreeValue(ctx, exception);
+
+    is_array_buffer = *buf != NULL || is_empty;
+
+    if (is_array_buffer)
+        return JS_UNDEFINED;
+
+    JSValue buffer;
+    size_t byte_offset;
+
+    buffer = JS_GetTypedArrayBuffer(ctx, val, &byte_offset, buf_len, NULL);
+    if (!JS_IsException(buffer))
+    {
+        *buf = JS_GetArrayBuffer(ctx, buf_len, buffer) + byte_offset;
+        JS_FreeValue(ctx, buffer);
+        return JS_UNDEFINED;
+    }
+    else
+    {
+        JS_FreeValue(ctx, JS_GetException(ctx));
+        JSValue ctor, ctorName;
+
+        ctor = JS_GetPropertyStr(ctx, val, "constructor");
+        if (JS_IsException(ctor))
+            return JS_EXCEPTION;
+        ctorName = JS_GetPropertyStr(ctx, ctor, "name");
+        if (JS_IsException(ctorName))
+        {
+            JS_FreeValue(ctx, ctor);
+            return JS_EXCEPTION;
+        }
+        const char *cStr = JS_ToCString(ctx, ctorName);
+        JSValue error =
+            JS_ThrowTypeError(ctx, "expected an array buffer, got %s", cStr);
+        JS_FreeCString(ctx, cStr);
+        JS_FreeValue(ctx, ctorName);
+        JS_FreeValue(ctx, ctor);
+
+        return error;
+    }
+
+    return JS_ThrowTypeError(ctx, "expected an array buffer");
+}
+
+JS_RL_CLASS_CTOR(Image)
+{
+    return JS_ThrowTypeError(
+        ctx, "rl.Image is not supposed to be initialized directly, use "
+             "rl.LoadImage() or related function instead");
+}
+
+JS_RL_GETTER_MAGIC(Image, img_props)
+{
+    if (magic == IMAGE_PROTO_DATA_MAGIC)
+        return JS_ThrowTypeError(ctx, "image data is a private field");
+
+    Image *img = JS_GetOpaque2(ctx, this_val, js_rl_Image_class_id);
+    if (!img)
+        return JS_EXCEPTION;
+
+    return JS_UNDEFINED;
+}
+
+JS_RL_SETTER_MAGIC(Image, img_props)
+{
+    if (magic == IMAGE_PROTO_DATA_MAGIC)
+        return JS_ThrowTypeError(ctx, "image data is a private field");
+
+    Image *img = JS_GetOpaque2(ctx, this_val, js_rl_Image_class_id);
+    if (!img)
+        return JS_EXCEPTION;
+
+    return JS_UNDEFINED;
+}
+
+JS_RL_CLASS_FINALIZER(Image)
+{
+    Image *img = JS_GetOpaque(val, js_rl_Image_class_id);
+    js_free_rt(rt, img);
+}
+
+char *io_readfile(JSContext *ctx, const char *filename)
 {
     FILE *f;
     long len;
@@ -362,12 +491,12 @@ char *io_readfile(const char *filename)
     fseek(f, 0, SEEK_END);
     len = ftell(f);
     fseek(f, 0, SEEK_SET);
-    buf = malloc(len + 1);
+    buf = js_mallocz(ctx, len + 1);
     if (!buf)
         return NULL;
     if (fread(buf, 1, len, f) != (size_t)len)
     {
-        free(buf);
+        js_free(ctx, buf);
         return NULL;
     }
     fclose(f);

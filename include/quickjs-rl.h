@@ -3,7 +3,7 @@
 
 #include "quickjs.h"
 
-char *io_readfile(const char *filename);
+char *io_readfile(JSContext* ctx, const char *filename);
 
 #define CHECK_FOR_EXCEPTION(condition)                                         \
     if (condition)                                                             \
@@ -90,7 +90,7 @@ char *io_readfile(const char *filename);
 #define JS_RL_CLASS_DECLARE_INIT(name) JS_RL_CLASS_DECLARE_INIT2(name, )
 
 #define JS_RL_CLASS_PROTO_FUNCS(claz)                                          \
-    const JSCFunctionListEntry js_rl_##claz##_proto_funcs[] =
+    const JSCFunctionListEntry js_rl_##claz##_proto_funcs[]
 
 #define JS_RL_CLASS_DEF(claz)                                                  \
     JSClassDef js_rl_##claz##_class = {                                        \
