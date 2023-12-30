@@ -81,5 +81,7 @@ end:
     JS_FreeContext(ctx);
     JS_FreeRuntime(rt);
 
+    printf("done\n");
+
     return 0;
 }

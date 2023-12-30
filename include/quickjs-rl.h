@@ -2,8 +2,9 @@
 #define QUICKJS_RL_H
 
 #include "quickjs.h"
+#include "raylib.h"
 
-char *io_readfile(JSContext* ctx, const char *filename);
+char *io_readfile(JSContext *ctx, const char *filename);
 
 #define CHECK_FOR_EXCEPTION(condition)                                         \
     if (condition)                                                             \
@@ -34,6 +35,14 @@ char *io_readfile(JSContext* ctx, const char *filename);
         return JS_NewBool(ctx, value);                                         \
     }
 
+#define JS_RL_FUNC_RET_VOID(name, code)                                        \
+    JSValue js_rl_##name(JSContext *ctx, JSValueConst this_val, int argc,      \
+                         JSValueConst *argv)                                   \
+    {                                                                          \
+        code;                                                                  \
+        return JS_UNDEFINED;                                                   \
+    }
+
 #define JS_RL_FUNC(name) _JS_FUNC(name);
 #define JS_RL_GETTER_MAGIC(claz, name) _JS_GETTER_MAGIC(claz, name)
 #define JS_RL_SETTER_MAGIC(claz, name) _JS_SETTER_MAGIC(claz, name)
@@ -51,7 +60,6 @@ char *io_readfile(JSContext* ctx, const char *filename);
 #define _JS_RL_CLASS_INIT(name)                                                \
     extern JSClassID js_rl_##name##_class_id;                                  \
     extern JSClassDef js_rl_##name##_class;                                    \
-    extern JSValue js_rl_##name##_proto;                                       \
     void js_rl_##name##_init(JSContext *ctx)
 
 #define JS_RL_CLASS_INIT _JS_RL_CLASS_INIT
@@ -62,10 +70,9 @@ char *io_readfile(JSContext* ctx, const char *filename);
 
 #define JS_RL_CLASS_DECLARE_INIT2(name, code)                                  \
     JSClassID js_rl_##name##_class_id;                                         \
-    JSValue js_rl_##name##_proto;                                              \
     void js_rl_##name##_init(JSContext *ctx)                                   \
     {                                                                          \
-        JSValue name##_class;                                                  \
+        JSValue name##_class, js_rl_##name##_proto;                                                  \
         JS_NewClassID(&js_rl_##name##_class_id);                               \
         JS_NewClass(JS_GetRuntime(ctx), js_rl_##name##_class_id,               \
                     &js_rl_##name##_class);                                    \
@@ -109,5 +116,10 @@ char *io_readfile(JSContext* ctx, const char *filename);
 #undef JS_RL_CLASSES
 
 void JS_AddRLBindings(JSContext *ctx);
+
+typedef struct
+{
+    Image image;
+} RLImage;
 
 #endif // QUICKJS_RL_H

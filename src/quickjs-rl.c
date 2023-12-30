@@ -1,10 +1,12 @@
 #include "quickjs-rl.h"
-#include "cutils.h"
+#include "quick-rl-utils.h"
 #include <assert.h>
 #include <corecrt.h>
 #include <quickjs.h>
 #include <raylib.h>
 #include <stdint.h>
+
+#define countof(x) (sizeof(x) / sizeof((x)[0]))
 
 const JSCFunctionListEntry js_rl_funcs[] = {
 
@@ -92,6 +94,49 @@ JS_RL_FUNC(log)
     return JS_UNDEFINED;
 }
 
+JS_RL_PREPARE(Window)
+{
+    JSValue global_obj = JS_GetGlobalObject(ctx);
+    assert(!JS_IsException(global_obj));
+
+    JSValue rl_obj = JS_GetPropertyStr(ctx, global_obj, "rl");
+    assert(!JS_IsException(rl_obj));
+
+    JSValue config_flags = JS_NewObject(ctx);
+    JSValue flag_v;
+
+    JS_SetPropertyStr(ctx, rl_obj, "ConfigFlags", config_flags);
+
+// definition is included in rl_obj just for compatibility reasons with other js
+// bindings
+#define DEFINE_CONFIG_FLAG(flag)                                               \
+    flag_v = JS_NewInt32(ctx, flag);                                           \
+    JS_SetPropertyStr(ctx, rl_obj, #flag, flag_v);                             \
+    JS_SetPropertyStr(ctx, config_flags, #flag, flag_v)
+
+    DEFINE_CONFIG_FLAG(FLAG_VSYNC_HINT);
+    DEFINE_CONFIG_FLAG(FLAG_FULLSCREEN_MODE);
+    DEFINE_CONFIG_FLAG(FLAG_WINDOW_RESIZABLE);
+    DEFINE_CONFIG_FLAG(FLAG_WINDOW_UNDECORATED);
+    DEFINE_CONFIG_FLAG(FLAG_WINDOW_HIDDEN);
+    DEFINE_CONFIG_FLAG(FLAG_WINDOW_MINIMIZED);
+    DEFINE_CONFIG_FLAG(FLAG_WINDOW_MAXIMIZED);
+    DEFINE_CONFIG_FLAG(FLAG_WINDOW_UNFOCUSED);
+    DEFINE_CONFIG_FLAG(FLAG_WINDOW_TOPMOST);
+    DEFINE_CONFIG_FLAG(FLAG_WINDOW_ALWAYS_RUN);
+    DEFINE_CONFIG_FLAG(FLAG_WINDOW_TRANSPARENT);
+    DEFINE_CONFIG_FLAG(FLAG_WINDOW_HIGHDPI);
+    DEFINE_CONFIG_FLAG(FLAG_WINDOW_MOUSE_PASSTHROUGH);
+    DEFINE_CONFIG_FLAG(FLAG_BORDERLESS_WINDOWED_MODE);
+    DEFINE_CONFIG_FLAG(FLAG_MSAA_4X_HINT);
+    DEFINE_CONFIG_FLAG(FLAG_INTERLACED_HINT);
+
+#undef DEFINE_CONFIG_FLAG
+
+    JS_FreeValue(ctx, rl_obj);
+    JS_FreeValue(ctx, global_obj);
+}
+
 JS_RL_FUNC(InitWindow)
 {
 
@@ -99,14 +144,15 @@ JS_RL_FUNC(InitWindow)
     const char *title = NULL;
 
     if (argc != 3)
-    {
         return JS_ThrowTypeError(ctx, "expected 3 arguments, got %d", argc);
-    }
 
-    if (JS_ToInt32(ctx, &width, argv[0]) < 0)
+    if (!JS_IsNumber(argv[0]) || !JS_IsNumber(argv[1]))
+        return JS_ThrowTypeError(ctx, "expected a number");
+
+    if (JS_ToInt32(ctx, &width, argv[0]))
         return JS_EXCEPTION;
 
-    if (JS_ToInt32(ctx, &height, argv[1]) < 0)
+    if (JS_ToInt32(ctx, &height, argv[1]))
         return JS_EXCEPTION;
 
     if ((title = JS_ToCString(ctx, argv[2])) == NULL)
@@ -140,6 +186,87 @@ JS_RL_FUNC_RET_BOOL(IsWindowMaximized, IsWindowMaximized());
 JS_RL_FUNC_RET_BOOL(IsWindowFocused, IsWindowFocused());
 
 JS_RL_FUNC_RET_BOOL(IsWindowResized, IsWindowResized());
+
+JS_RL_FUNC(IsWindowState)
+{
+    int flag;
+
+    if (argc != 1)
+        return JS_ThrowTypeError(ctx, "expected exactly 1 argument, got %d",
+                                 argc);
+
+    if (!JS_IsNumber(argv[0]))
+        return JS_ThrowTypeError(ctx, "expected a number");
+
+    if (JS_ToInt32(ctx, &flag, argv[0]))
+        return JS_EXCEPTION;
+
+    return JS_NewBool(ctx, IsWindowState(flag));
+}
+
+JS_RL_FUNC(SetWindowState)
+{
+    int flag;
+
+    if (argc != 1)
+        return JS_ThrowTypeError(ctx, "expected exactly 1 argument, got %d",
+                                 argc);
+
+    if (!JS_IsNumber(argv[0]))
+        return JS_ThrowTypeError(ctx, "expected a number");
+
+    if (JS_ToInt32(ctx, &flag, argv[0]))
+        return JS_EXCEPTION;
+
+    SetWindowState(flag);
+
+    return JS_UNDEFINED;
+}
+
+JS_RL_FUNC(ClearWindowState)
+{
+    int flag;
+
+    if (argc != 1)
+        return JS_ThrowTypeError(ctx, "expected exactly 1 argument, got %d",
+                                 argc);
+
+    if (!JS_IsNumber(argv[0]))
+        return JS_ThrowTypeError(ctx, "expected a number");
+
+    if (JS_ToInt32(ctx, &flag, argv[0]))
+        return JS_EXCEPTION;
+
+    ClearWindowState(flag);
+
+    return JS_UNDEFINED;
+}
+
+JS_RL_FUNC_RET_VOID(ToggleFullscreen, ToggleFullscreen())
+
+JS_RL_FUNC_RET_VOID(ToggleBorderlessWindowed, ToggleBorderlessWindowed())
+
+JS_RL_FUNC_RET_VOID(MaximizeWindow, MaximizeWindow())
+
+JS_RL_FUNC_RET_VOID(MinimizeWindow, MinimizeWindow())
+
+JS_RL_FUNC_RET_VOID(RestoreWindow, RestoreWindow())
+
+JS_RL_FUNC(SetWindowIcon)
+{
+
+    if (argc != 1)
+        return JS_ThrowTypeError(ctx, "expected exactly 1 argument, got %d",
+                                 argc);
+
+    RLImage *img = JS_GetOpaque2(ctx, argv[0], js_rl_Image_class_id);
+    if (!img)
+        return JS_EXCEPTION;
+
+    SetWindowIcon(img->image);
+
+    return JS_UNDEFINED;
+}
 
 JS_RL_FUNC(ClearBackground)
 {
@@ -192,6 +319,8 @@ JS_RL_PREPARE(Color)
     rl_obj = JS_GetPropertyStr(ctx, global_obj, "rl");
     assert(!JS_IsException(rl_obj));
 
+    JSValue class_proto = JS_GetClassProto(ctx, js_rl_Color_class_id);
+
 #define DEFINE_COLOR(name)                                                     \
     Color *c_##name;                                                           \
     c_##name = js_mallocz(ctx, sizeof(*c_##name));                             \
@@ -199,8 +328,7 @@ JS_RL_PREPARE(Color)
     c_##name->g = name.g;                                                      \
     c_##name->b = name.b;                                                      \
     c_##name->a = name.a;                                                      \
-    obj =                                                                      \
-        JS_NewObjectProtoClass(ctx, js_rl_Color_proto, js_rl_Color_class_id);  \
+    obj = JS_NewObjectProtoClass(ctx, class_proto, js_rl_Color_class_id);      \
     if (JS_IsException(obj))                                                   \
         /* not handled yet */                                                  \
         ;                                                                      \
@@ -236,6 +364,7 @@ JS_RL_PREPARE(Color)
 
     JS_FreeValue(ctx, rl_obj);
     JS_FreeValue(ctx, global_obj);
+    JS_FreeValue(ctx, class_proto);
 
 #undef DEFINE_COLOR
 }
@@ -265,7 +394,7 @@ JS_RL_CLASS_CTOR(Color)
             JS_ThrowTypeError(ctx, "expected a number");                       \
             goto fail;                                                         \
         }                                                                      \
-        if (JS_ToInt32(ctx, &colorVal, argv[argc]) < 0)                        \
+        if (JS_ToInt32(ctx, &colorVal, argv[argc]))                            \
             goto fail;                                                         \
         if (colorVal < 0 || colorVal > 255)                                    \
         {                                                                      \
@@ -285,8 +414,10 @@ JS_RL_CLASS_CTOR(Color)
     SET_COLOR(a);
 
 #undef SET_COLOR
+    JSValue class_proto = JS_GetClassProto(ctx, js_rl_Color_class_id);
+    obj = JS_NewObjectProtoClass(ctx, class_proto, js_rl_Color_class_id);
+    JS_FreeValue(ctx, class_proto);
 
-    obj = JS_NewObjectProtoClass(ctx, js_rl_Color_proto, js_rl_Color_class_id);
     if (JS_IsException(obj))
         goto fail;
 
@@ -379,69 +510,6 @@ JS_RL_CLASS_DECLARE_INIT(Image)
 
 JS_RL_CLASS_DEF(Image);
 
-JSValue get_array_buffer_contents(JSContext *ctx, JSValue val, uint8_t **buf,
-                                  size_t *buf_len)
-{
-    JSValue exception;
-    bool is_empty, is_array_buffer;
-
-    if (JS_IsUndefined(val))
-    {
-        return JS_ThrowTypeError(ctx,
-                                 "expected an array buffer, got undefined");
-    }
-    else if (JS_IsNull(val))
-    {
-        return JS_ThrowTypeError(ctx, "expected an array buffer, got null");
-    }
-
-    *buf = JS_GetArrayBuffer(ctx, buf_len, val);
-
-    is_empty = *buf == NULL && JS_IsNull(exception);
-    JS_FreeValue(ctx, exception);
-
-    is_array_buffer = *buf != NULL || is_empty;
-
-    if (is_array_buffer)
-        return JS_UNDEFINED;
-
-    JSValue buffer;
-    size_t byte_offset;
-
-    buffer = JS_GetTypedArrayBuffer(ctx, val, &byte_offset, buf_len, NULL);
-    if (!JS_IsException(buffer))
-    {
-        *buf = JS_GetArrayBuffer(ctx, buf_len, buffer) + byte_offset;
-        JS_FreeValue(ctx, buffer);
-        return JS_UNDEFINED;
-    }
-    else
-    {
-        JS_FreeValue(ctx, JS_GetException(ctx));
-        JSValue ctor, ctorName;
-
-        ctor = JS_GetPropertyStr(ctx, val, "constructor");
-        if (JS_IsException(ctor))
-            return JS_EXCEPTION;
-        ctorName = JS_GetPropertyStr(ctx, ctor, "name");
-        if (JS_IsException(ctorName))
-        {
-            JS_FreeValue(ctx, ctor);
-            return JS_EXCEPTION;
-        }
-        const char *cStr = JS_ToCString(ctx, ctorName);
-        JSValue error =
-            JS_ThrowTypeError(ctx, "expected an array buffer, got %s", cStr);
-        JS_FreeCString(ctx, cStr);
-        JS_FreeValue(ctx, ctorName);
-        JS_FreeValue(ctx, ctor);
-
-        return error;
-    }
-
-    return JS_ThrowTypeError(ctx, "expected an array buffer");
-}
-
 JS_RL_CLASS_CTOR(Image)
 {
     return JS_ThrowTypeError(
@@ -454,9 +522,22 @@ JS_RL_GETTER_MAGIC(Image, img_props)
     if (magic == IMAGE_PROTO_DATA_MAGIC)
         return JS_ThrowTypeError(ctx, "image data is a private field");
 
-    Image *img = JS_GetOpaque2(ctx, this_val, js_rl_Image_class_id);
+    RLImage *img = JS_GetOpaque2(ctx, this_val, js_rl_Image_class_id);
     if (!img)
         return JS_EXCEPTION;
+
+#define GET_IMG_PROP(prop, _magic)                                             \
+    if (magic == _magic)                                                       \
+    {                                                                          \
+        return JS_NewInt32(ctx, img->image.prop);                              \
+    }
+
+    GET_IMG_PROP(width, IMAGE_PROTO_WIDTH_MAGIC);
+    GET_IMG_PROP(height, IMAGE_PROTO_HEIGHT_MAGIC);
+    GET_IMG_PROP(mipmaps, IMAGE_PROTO_MIPMAPS_MAGIC);
+    GET_IMG_PROP(format, IMAGE_PROTO_FORMAT_MAGIC);
+
+#undef GET_IMG_PROP
 
     return JS_UNDEFINED;
 }
@@ -466,17 +547,248 @@ JS_RL_SETTER_MAGIC(Image, img_props)
     if (magic == IMAGE_PROTO_DATA_MAGIC)
         return JS_ThrowTypeError(ctx, "image data is a private field");
 
-    Image *img = JS_GetOpaque2(ctx, this_val, js_rl_Image_class_id);
+    RLImage *img = JS_GetOpaque2(ctx, this_val, js_rl_Image_class_id);
     if (!img)
         return JS_EXCEPTION;
+
+    if (!JS_IsNumber(val))
+        return JS_ThrowTypeError(ctx, "expected a number");
+
+    int propVal;
+    if (JS_ToInt32(ctx, &propVal, val))
+        return JS_EXCEPTION;
+
+#define SET_IMG_PROP(prop, _magic)                                             \
+    if (magic == _magic)                                                       \
+    {                                                                          \
+        img->image.prop = propVal;                                             \
+        return JS_UNDEFINED;                                                   \
+    }
+
+    SET_IMG_PROP(width, IMAGE_PROTO_WIDTH_MAGIC);
+    SET_IMG_PROP(height, IMAGE_PROTO_HEIGHT_MAGIC);
+    SET_IMG_PROP(mipmaps, IMAGE_PROTO_MIPMAPS_MAGIC);
+    SET_IMG_PROP(format, IMAGE_PROTO_FORMAT_MAGIC);
 
     return JS_UNDEFINED;
 }
 
 JS_RL_CLASS_FINALIZER(Image)
 {
-    Image *img = JS_GetOpaque(val, js_rl_Image_class_id);
+    RLImage *img = JS_GetOpaque(val, js_rl_Image_class_id);
     js_free_rt(rt, img);
+}
+
+JS_RL_FUNC(LoadImage)
+{
+    if (argc != 1)
+        return JS_ThrowTypeError(ctx, "expected exactly 1 argument, got %d",
+                                 argc);
+
+    JSValue obj = JS_UNDEFINED;
+
+    const char *filename = JS_ToCString(ctx, argv[0]);
+    if (!filename)
+        return JS_EXCEPTION;
+
+    Image img = LoadImage(filename);
+
+    if (img.data == NULL)
+    {
+        JS_FreeCString(ctx, filename);
+        return JS_NULL;
+    }
+
+    JSValue class_proto = JS_GetClassProto(ctx, js_rl_Image_class_id);
+    obj = JS_NewObjectProtoClass(ctx, class_proto, js_rl_Image_class_id);
+    JS_FreeValue(ctx, class_proto);
+
+    if (JS_IsException(obj))
+        goto fail;
+
+    RLImage *imgObj = js_mallocz(ctx, sizeof(*imgObj));
+    if (!imgObj)
+        goto fail;
+
+    imgObj->image = img;
+
+    JS_SetOpaque(obj, imgObj);
+
+    return obj;
+fail:
+    JS_FreeCString(ctx, filename);
+    js_free(ctx, imgObj);
+    if (!JS_IsUndefined(obj))
+        JS_FreeValue(ctx, obj);
+    return JS_EXCEPTION;
+}
+
+JS_RL_FUNC(LoadImageRaw)
+{
+    if (argc != 5)
+        return JS_ThrowTypeError(ctx, "expected exactly 5 arguments, got %d",
+                                 argc);
+
+    JSValue obj = JS_UNDEFINED;
+
+    const char *filename = JS_ToCString(ctx, argv[0]);
+    if (!filename)
+        return JS_EXCEPTION;
+
+    int width, height, format, headerSize;
+
+    if (JS_ToInt32(ctx, &width, argv[1]))
+        goto fail;
+
+    if (JS_ToInt32(ctx, &height, argv[2]))
+        goto fail;
+
+    if (JS_ToInt32(ctx, &format, argv[3]))
+        goto fail;
+
+    if (JS_ToInt32(ctx, &headerSize, argv[4]))
+        goto fail;
+
+    Image img = LoadImageRaw(filename, width, height, format, headerSize);
+
+    if (img.data == NULL)
+    {
+        JS_FreeCString(ctx, filename);
+        return JS_NULL;
+    }
+
+    JSValue class_proto = JS_GetClassProto(ctx, js_rl_Image_class_id);
+    obj = JS_NewObjectProtoClass(ctx, class_proto, js_rl_Image_class_id);
+    JS_FreeValue(ctx, class_proto);
+
+    if (JS_IsException(obj))
+        goto fail;
+
+    RLImage *imgObj = js_mallocz(ctx, sizeof(*imgObj));
+    if (!imgObj)
+        goto fail;
+
+    imgObj->image = img;
+
+    JS_SetOpaque(obj, imgObj);
+
+    return obj;
+
+fail:
+    JS_FreeCString(ctx, filename);
+    js_free(ctx, imgObj);
+    if (!JS_IsUndefined(obj))
+        JS_FreeValue(ctx, obj);
+    return JS_EXCEPTION;
+}
+
+//  Image LoadImageSvg(const char *fileNameOrString, int width, int height); //
+//  Load image from SVG file data or string with specified size
+JS_RL_FUNC(LoadImageSvg)
+{
+    if (argc != 3)
+        return JS_ThrowTypeError(ctx, "expected exactly 3 arguments, got %d",
+                                 argc);
+
+    JSValue obj = JS_UNDEFINED;
+
+    const char *filename = JS_ToCString(ctx, argv[0]);
+    if (!filename)
+        return JS_EXCEPTION;
+
+    int width, height;
+
+    if (JS_ToInt32(ctx, &width, argv[1]))
+        goto fail;
+
+    if (JS_ToInt32(ctx, &height, argv[2]))
+        goto fail;
+
+    Image img = LoadImageSvg(filename, width, height);
+
+    if (img.data == NULL)
+    {
+        JS_FreeCString(ctx, filename);
+        return JS_NULL;
+    }
+
+    JSValue class_proto = JS_GetClassProto(ctx, js_rl_Image_class_id);
+    obj = JS_NewObjectProtoClass(ctx, class_proto, js_rl_Image_class_id);
+    JS_FreeValue(ctx, class_proto);
+
+    if (JS_IsException(obj))
+        goto fail;
+
+    RLImage *imgObj = js_mallocz(ctx, sizeof(*imgObj));
+    if (!imgObj)
+        goto fail;
+
+    imgObj->image = img;
+
+    JS_SetOpaque(obj, imgObj);
+
+    return obj;
+
+fail:
+    JS_FreeCString(ctx, filename);
+    js_free(ctx, imgObj);
+    if (!JS_IsUndefined(obj))
+        JS_FreeValue(ctx, obj);
+    return JS_EXCEPTION;
+}
+
+JS_RL_FUNC(LoadImageAnim)
+{
+    // TODO: implement.
+    return JS_UNDEFINED;
+}
+
+JS_RL_FUNC(LoadImageFromMemory)
+{
+    // TODO: implement.
+    return JS_UNDEFINED;
+}
+
+JS_RL_FUNC(LoadImageFromTexture)
+{
+    // TODO: implement.
+    return JS_UNDEFINED;
+}
+
+JS_RL_FUNC(LoadImageFromScreen)
+{
+    // TODO: implement.
+    return JS_UNDEFINED;
+}
+
+JS_RL_FUNC(IsImageReady)
+{
+    // TODO: implement.
+    return JS_UNDEFINED;
+}
+
+JS_RL_FUNC(UnloadImage)
+{
+    // TODO: implement.
+    return JS_UNDEFINED;
+}
+
+JS_RL_FUNC(ExportImage)
+{
+    // TODO: implement.
+    return JS_UNDEFINED;
+}
+
+JS_RL_FUNC(ExportImageToMemory)
+{
+    // TODO: implement.
+    return JS_UNDEFINED;
+}
+
+JS_RL_FUNC(ExportImageAsCode)
+{
+    // TODO: implement.
+    return JS_UNDEFINED;
 }
 
 char *io_readfile(JSContext *ctx, const char *filename)

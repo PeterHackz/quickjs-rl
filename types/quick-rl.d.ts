@@ -5,6 +5,42 @@ declare namespace rl {
      */
     function log(...args: any[]): void;
 
+    enum ConfigFlags {
+        FLAG_VSYNC_HINT,
+        FLAG_FULLSCREEN_MODE,
+        FLAG_WINDOW_RESIZABLE,
+        FLAG_WINDOW_UNDECORATED,
+        FLAG_WINDOW_HIDDEN,
+        FLAG_WINDOW_MINIMIZED,
+        FLAG_WINDOW_MAXIMIZED,
+        FLAG_WINDOW_UNFOCUSED,
+        FLAG_WINDOW_TOPMOST,
+        FLAG_WINDOW_ALWAYS_RUN,
+        FLAG_WINDOW_TRANSPARENT,
+        FLAG_WINDOW_HIGHDPI,
+        FLAG_WINDOW_MOUSE_PASSTHROUGH,
+        FLAG_BORDERLESS_WINDOWED_MODE,
+        FLAG_MSAA_4X_HINT,
+        FLAG_INTERLACED_HINT,
+    }
+
+    const FLAG_VSYNC_HINT = ConfigFlags.FLAG_VSYNC_HINT,
+        FLAG_FULLSCREEN_MODE = ConfigFlags.FLAG_FULLSCREEN_MODE,
+        FLAG_WINDOW_RESIZABLE = ConfigFlags.FLAG_WINDOW_RESIZABLE,
+        FLAG_WINDOW_UNDECORATED = ConfigFlags.FLAG_WINDOW_UNDECORATED,
+        FLAG_WINDOW_HIDDEN = ConfigFlags.FLAG_WINDOW_HIDDEN,
+        FLAG_WINDOW_MINIMIZED = ConfigFlags.FLAG_WINDOW_MINIMIZED,
+        FLAG_WINDOW_MAXIMIZED = ConfigFlags.FLAG_WINDOW_MAXIMIZED,
+        FLAG_WINDOW_UNFOCUSED = ConfigFlags.FLAG_WINDOW_UNFOCUSED,
+        FLAG_WINDOW_TOPMOST = ConfigFlags.FLAG_WINDOW_TOPMOST,
+        FLAG_WINDOW_ALWAYS_RUN = ConfigFlags.FLAG_WINDOW_ALWAYS_RUN,
+        FLAG_WINDOW_TRANSPARENT = ConfigFlags.FLAG_WINDOW_TRANSPARENT,
+        FLAG_WINDOW_HIGHDPI = ConfigFlags.FLAG_WINDOW_HIGHDPI,
+        FLAG_WINDOW_MOUSE_PASSTHROUGH = ConfigFlags.FLAG_WINDOW_MOUSE_PASSTHROUGH,
+        FLAG_BORDERLESS_WINDOWED_MODE = ConfigFlags.FLAG_BORDERLESS_WINDOWED_MODE,
+        FLAG_MSAA_4X_HINT = ConfigFlags.FLAG_MSAA_4X_HINT,
+        FLAG_INTERLACED_HINT = ConfigFlags.FLAG_INTERLACED_HINT;
+
     /**
      * Initialize window and OpenGL context
      * @param width - width of the window
@@ -59,6 +95,52 @@ declare namespace rl {
     function IsWindowResized(): boolean;
 
     /**
+     * Check if one specific window flag is enabled
+     */
+    function IsWindowState(flag: number): boolean;
+
+    /**
+     * Set window configuration state using flags (only PLATFORM_DESKTOP)
+     * @param flags - flags to set (rl.FLAG_*)
+     */
+    function SetWindowState(flag: ConfigFlags): void;
+
+    /**
+     * Clear window configuration state flags (only PLATFORM_DESKTOP)
+     */
+    function ClearWindowState(flag: ConfigFlags): void;
+
+    /**
+     * Toggle window state: fullscreen/windowed (only PLATFORM_DESKTOP)
+     */
+    function ToggleFullscreen(): void;
+
+    /**
+     * Toggle window state: borderless/windowed (only PLATFORM_DESKTOP)
+     */
+    function ToggleBorderlessWindowed(): void;
+
+    /**
+     * Set window state: maximized, if resizable (only PLATFORM_DESKTOP)
+     */
+    function MaximizeWindow(): void;
+
+    /**
+     * Set window state: minimized, if resizable (only PLATFORM_DESKTOP)
+     */
+    function MinimizeWindow(): void;
+
+    /**
+     * Set window state: not minimized/maximized (only PLATFORM_DESKTOP)
+     */
+    function RestoreWindow(): void;
+
+    /**
+     * Set icon for window (single image, RGBA 32bit, only PLATFORM_DESKTOP)
+     */
+    function SetWindowIcon(image: Image): void;
+
+    /**
         Setup canvas (framebuffer) to start drawing
      */
     function BeginDrawing(): void;
@@ -103,6 +185,13 @@ declare namespace rl {
          */
         private constructor();
     }
+
+    /**
+     * Load image from file into CPU memory (RAM)
+     * if image fails to load, null is returned
+     * but if an unexpected internal error occurs, exception is thrown
+     */
+    function LoadImage(fileName: string): Image;
 
     const LIGHTGRAY: Color,
         GRAY: Color,
